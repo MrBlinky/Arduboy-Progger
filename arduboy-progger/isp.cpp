@@ -245,7 +245,7 @@ void ISP1_disable()
 bool ISP1_enable()
 {
   uint8_t result;
-  UBRR1 =31;//250KHz
+  UBRR1 = ISP_UBRR_VALUE;
   for (uint8_t retries = 0; retries < 3; retries++)
   {
     bitSet(PORTF, TGT1_SCL_BIT); // inactive high
@@ -271,7 +271,7 @@ void ISP2_disable()
 bool ISP2_enable()
 {
   uint8_t result;
-  UBRR1 = 31; //250KHz SPI speed
+  UBRR1 = ISP_UBRR_VALUE;
   for (uint8_t retries = 0; retries < 3; retries++)
   {
     bitSet(PORTF, TGT2_SCL_BIT); // inactive high
@@ -295,7 +295,7 @@ void ISP3_disable()
 bool ISP3_enable()
 {
   uint8_t result;
-  UBRR1 = 31; //250KHz SPI speed
+  UBRR1 = ISP_UBRR_VALUE;
   for (uint8_t retries = 0; retries < 3; retries++)
   {
     bitSet(PORTF, TGT3_SCL_BIT); // inactive high

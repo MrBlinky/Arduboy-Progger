@@ -1,6 +1,8 @@
 #pragma once
 #include <Arduino.h>
 
+#define ISP_UBRR_VALUE 63 //125KHz
+
 // ISP programming commands
 #define ISP_CMD_PROGRAM_ENABLE  0xAC53  // 0xAC 0x53 0x00 0x00 Programming enable 
 #define ISP_CMD_READ_ID         0x3000  // 0x30 0x00 LSB  0x00 Read device ID byte 0..2 
