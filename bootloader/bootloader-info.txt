@@ -1,0 +1,15 @@
+arduboy3k-bootloader-menu-sda.hex
+---------------------------------
+
+Use this bootloader if you want to boot the programmer to start in bootloader
+mode after powering on.
+On a blank source chip it will show the USB logo otherwise it will show the
+loader screen.
+
+Pressing the button will exit bootloader mode and start the modchip detection
+cycle.
+
+arduboy3k-bootloader-game-sda.hex
+---------------------------------
+Use this bootloader so the programmer enters detection mode right away after
+powering on.
