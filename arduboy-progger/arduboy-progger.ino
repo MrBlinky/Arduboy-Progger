@@ -2,23 +2,50 @@
 #include <Sprites.h>
 #include "boot.h"
 #include "isp.h"
-#include "atBitmap.h"
-#include "fxBitmap.h"
-#include "ncBitmap.h"
+#include "fxStateBitmap.h"
 #include "slotBitmap.h"
 #include "mod-chip-attiny.ino.tiny8.menu.h"
 
 #define FIRMWARE mod_chip_attiny_ino_tiny8_menu
 
+#define MODCHIP1 0
+#define MODCHIP2 1
+#define MODCHIP3 2
+
+#define MC_NOT_FOUND    0
+#define MC_FX_FOUND     1
+#define MC_AVR_FOUND    2
+#define MC_PROGRAMMING  3
+#define MC_VERIFYING    4
+#define MC_FAIL         5
+#define MC_PASS         6
+
 Arduboy2 arduboy;
 Sprites sprites;
+
+struct ChipState
+{
+  uint8_t avr;
+  uint8_t fx;
+};
+
+ChipState chipState[3];
 
 void delayMillis(uint8_t millis) // wrapper for ISP delay
 {
   arduboy.delayShort(millis);
 }
 
-uint8_t chipState;
+void updateDisplay()
+{
+  for (uint8_t i = 0; i < 3; ++i)
+  {
+    sprites.drawSelfMasked(0, i * 22 + 6, slotBitmap, i);
+    sprites.drawSelfMasked(38, i * 22, fxStateBitmap, chipState[i].fx);
+    sprites.drawSelfMasked(84, i * 22, fxStateBitmap, chipState[i].avr);
+  }
+  arduboy.display(CLEAR_BUFFER); 
+}
 
 void setup() 
 {
@@ -34,100 +61,68 @@ void chipDetect()
   if (detectCount == 0)
   {
     //update chipstates
-    if (TGT1_checkJedecID()) chipState |= 0x04; else chipState &= ~0x04;
-    if (TGT2_checkJedecID()) chipState |= 0x10; else chipState &= ~0x10;
-    if (TGT3_checkJedecID()) chipState |= 0x40; else chipState &= ~0x40;
-    if (ISP1_enable()) { ISP1_disable(); chipState |= 0x08; } else chipState &= ~0x08;
-    if (ISP2_enable()) { ISP2_disable(); chipState |= 0x20; } else chipState &= ~0x20;
-    if (ISP3_enable()) { ISP3_disable(); chipState |= 0x80; } else chipState &= ~0x80;
+    if (TGT1_checkJedecID()) chipState[MODCHIP1].fx = MC_FX_FOUND; else chipState[MODCHIP1].fx = MC_NOT_FOUND;
+    if (TGT2_checkJedecID()) chipState[MODCHIP2].fx = MC_FX_FOUND; else chipState[MODCHIP2].fx = MC_NOT_FOUND;
+    if (TGT3_checkJedecID()) chipState[MODCHIP3].fx = MC_FX_FOUND; else chipState[MODCHIP3].fx = MC_NOT_FOUND;
+    if (ISP1_enable()) { ISP1_disable(); chipState[MODCHIP1].avr = MC_AVR_FOUND;} else chipState[MODCHIP1].avr = MC_NOT_FOUND;
+    if (ISP2_enable()) { ISP2_disable(); chipState[MODCHIP2].avr = MC_AVR_FOUND;} else chipState[MODCHIP2].avr = MC_NOT_FOUND;
+    if (ISP3_enable()) { ISP3_disable(); chipState[MODCHIP3].avr = MC_AVR_FOUND;} else chipState[MODCHIP3].avr = MC_NOT_FOUND;
   }
   //update LED states  
   else if (detectCount < 11)
   {
-    if ((chipState & 0x0c) == 0x0C) LED1_GRN; else LED1_RED;
-    if ((chipState & 0x30) == 0x10) LED2_GRN; else LED2_RED;
-    if ((chipState & 0xc0) == 0x40) LED3_GRN; else LED3_RED;
+    if (chipState[0].fx && chipState[MODCHIP1].avr) LED1_GRN; else LED1_RED;
+    if (chipState[1].fx && chipState[MODCHIP2].avr) LED2_GRN; else LED2_RED;
+    if (chipState[2].fx && chipState[MODCHIP3].avr) LED3_GRN; else LED3_RED;
   }
   else //turn off LED for flashing effect (one or both chips not detected)
   { 
-    if ((chipState & 0x0C) != 0x0C) LED1_OFF;
-    if ((chipState & 0x30) != 0x30) LED2_OFF;
-    if ((chipState & 0xC0) != 0xC0) LED3_OFF;
-  }
-  //update display state  
-  uint8_t mask = 0x04; 
-  for (uint8_t i = 0; i < 3; ++i)
-  {
-    sprites.drawSelfMasked(0, i * 22 + 6, slotBitmap, i);
-    if (chipState & mask) sprites.drawSelfMasked(38, i * 22, fxBitmap, 0);
-    else sprites.drawSelfMasked(38, i * 22, ncBitmap, 0);
-    mask = mask << 1;
-    if (chipState & mask) sprites.drawSelfMasked(84, i * 22, atBitmap, 0);
-    else sprites.drawSelfMasked(84, i * 22, ncBitmap, 0);
-    mask = mask << 1;
+    LED1_OFF;
+    LED2_OFF;
+    LED3_OFF;
   }
   if (++detectCount >=  30) detectCount = 0;
+  updateDisplay();
 }
 
-bool flashModChip1()
+bool flashModChip(uint8_t modchip)
 {
-  bool result = false;
-  if (ISP1_enable())  
-  {
-    LED1_RED;
+  bool result;
+  if      (modchip == MODCHIP1) result = ISP1_enable();
+  else if (modchip == MODCHIP2) result = ISP2_enable();
+  else if (modchip == MODCHIP3) result = ISP3_enable();
+  if (result) {
+    chipState[modchip].avr = MC_PROGRAMMING;
+    if      (modchip == MODCHIP1) LED1_RED;
+    else if (modchip == MODCHIP2) LED2_RED;
+    else if (modchip == MODCHIP3) LED3_RED;
+    updateDisplay();
     ISP_eraseChip();
     ISP_writeProgramFlash(FIRMWARE);
-    LED1_YEL;
+    if      (modchip == MODCHIP1) LED1_OFF;
+    else if (modchip == MODCHIP2) LED2_OFF;
+    else if (modchip == MODCHIP3) LED3_OFF;
+    chipState[modchip].avr = MC_VERIFYING;
+    updateDisplay();
     if (ISP_verifyProgramFlash(FIRMWARE))
     {
-      LED1_GRN;
-      result = true;
+      if      (modchip == MODCHIP1) LED1_GRN;
+      else if (modchip == MODCHIP2) LED2_GRN;
+      else if (modchip == MODCHIP3) LED3_GRN;
+      chipState[modchip].avr = MC_PASS;
     }
     else
-      LED1_RED;
-    ISP1_disable();
-  }
-  return result;
-}
-
-bool flashModChip2()
-{
-  bool result = false;
-  if (ISP2_enable())  
-  {
-    LED1_RED;
-    ISP_eraseChip();
-    ISP_writeProgramFlash(FIRMWARE);
-    LED1_YEL;
-    if (ISP_verifyProgramFlash(FIRMWARE))
     {
-      LED1_GRN;
-      result = true;
+      if      (modchip == MODCHIP1) LED1_RED;
+      else if (modchip == MODCHIP2) LED2_RED;
+      else if (modchip == MODCHIP3) LED3_RED;
+      chipState[modchip].avr = MC_FAIL;
+      result = false;
     }
-    else
-      LED1_RED;
-    ISP2_disable();
-  }
-  return result;
-}
-
-bool flashModChip3()
-{
-  bool result = false;
-  if (ISP3_enable())  
-  {
-    LED1_RED;
-    ISP_eraseChip();
-    ISP_writeProgramFlash(FIRMWARE);
-    LED1_YEL;
-    if (ISP_verifyProgramFlash(FIRMWARE))
-    {
-      LED1_GRN;
-      result = true;
-    }
-    else
-      LED1_RED;
-    ISP3_disable();
+    if      (modchip == MODCHIP1) ISP1_disable();
+    else if (modchip == MODCHIP2) ISP2_disable();
+    else if (modchip == MODCHIP3) ISP3_disable();
+    updateDisplay();
   }
   return result;
 }
@@ -142,9 +137,9 @@ void loop() {
     LED1_OFF;  
     LED2_OFF;  
     LED3_OFF;  
-    if (chipState & 0x08) if (flashModChip1());
-    if (chipState & 0x20) if (flashModChip2());
-    if (chipState & 0x80) if (flashModChip3());
+    if (chipState[MODCHIP1].avr) flashModChip(MODCHIP1);
+    if (chipState[MODCHIP2].avr) flashModChip(MODCHIP2);
+    if (chipState[MODCHIP3].avr) flashModChip(MODCHIP3);
     
     //wait for button press to return to detect mode
     detectCount = 0;
@@ -160,5 +155,4 @@ void loop() {
     detectCount = 0;
     delayMillis(16);
   } 
-  arduboy.display(CLEAR_BUFFER); 
 }
