@@ -53,6 +53,7 @@ void updateDisplay()
 
 void setup() 
 {
+   Serial.begin(115200);
    boot();
    arduboy.display(CLEAR_BUFFER); 
    CS_PORT |= (1 << CS_BIT);
@@ -150,6 +151,34 @@ bool flashModChip(uint8_t modchip)
   return result;
 }
 
+void fxChipErase(uint8_t modchips)
+{
+  if (modchips & (1 << MODCHIP1)) TGT1_ENABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_ENABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_ENABLE;
+  writeByte(SFC_WRITE_ENABLE);
+  if (modchips & (1 << MODCHIP1)) TGT1_DISABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_DISABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_DISABLE;
+  
+  if (modchips & (1 << MODCHIP1)) TGT1_ENABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_ENABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_ENABLE;
+  writeByte(0xC7);
+  if (modchips & (1 << MODCHIP1)) TGT1_DISABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_DISABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_DISABLE;
+  
+  if (modchips & (1 << MODCHIP1)) TGT1_ENABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_ENABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_ENABLE;
+  writeByte(SFC_READSTATUS1);
+  while (readByte() & 1); 
+  if (modchips & (1 << MODCHIP1)) TGT1_DISABLE;
+  if (modchips & (1 << MODCHIP2)) TGT2_DISABLE;
+  if (modchips & (1 << MODCHIP3)) TGT3_DISABLE;
+}
+
 void flashFxChip()
 {
   uint8_t modchips = 0;
@@ -173,6 +202,9 @@ void flashFxChip()
   }
   updateDisplay();
 
+  //fxChipErase(modchips);
+  //LED1_YEL;
+  
   //prepare source flash
   FX::enable();
   FX::writeByte(SFC_READ);
@@ -181,6 +213,7 @@ void flashFxChip()
   FX::writeByte(0);
   SPDR = 0;
   
+  // program  
   uint16_t page = 0;
   do
   {
@@ -202,8 +235,11 @@ void flashFxChip()
     uint8_t i = 0;
     do
     {
-      uint8_t data = SPDR;  
+      uint8_t data = SPDR;
+      SPSR;
       SPDR = 0;
+      //if (data < 16) Serial.print('0');
+      //Serial.println(data,HEX);
       writeByte(data);
     } 
     while (--i != 0);
