@@ -2,6 +2,9 @@
 #define BOOT_H
 
 #include <Arduboy2.h>
+#include "ArduboyFX.h"
+
+#define MAX_FX_SIZE 16384 // flash chip size in kBytes
 
 // LEDs
 #define USB_LED_BIT     PORTB0 // RX LED
@@ -60,6 +63,10 @@
 // button macro
 #define BUTTON_IDLE (PINE & (1 << A_BUTTON_BIT))
 
+//source macros
+#define SRC_ENABLE     PORTD &= ~(1 << SRC_CS_BIT)
+#define SRC_DISABLE    PORTD |=  (1 << SRC_CS_BIT)
+
 //target macros
 #define TGT1_ENABLE     PORTF &= ~(1 << TGT1_SDA_BIT)
 #define TGT1_DISABLE    PORTF |=  (1 << TGT1_SDA_BIT)
@@ -80,25 +87,6 @@ void bootSPI();
 void bootOLED();
 void boot();
 
-//Serial Flash Commands
-constexpr uint8_t SFC_JEDEC_ID  	    = 0x9F;
-constexpr uint8_t SFC_READSTATUS1       = 0x05;
-constexpr uint8_t SFC_READSTATUS2       = 0x35;
-constexpr uint8_t SFC_READSTATUS3       = 0x15;
-constexpr uint8_t SFC_READ              = 0x03;
-constexpr uint8_t SFC_WRITE_ENABLE      = 0x06;
-constexpr uint8_t SFC_WRITE             = 0x04;
-constexpr uint8_t SFC_ERASE             = 0x20;
-constexpr uint8_t SFC_RELEASE_POWERDOWN = 0xAB;
-constexpr uint8_t SFC_POWERDOWN         = 0xB9;
-
-struct JedecID
-{
-  uint8_t manufacturer;
-  uint8_t device;
-  uint8_t size;
-};
-
 inline void wait() __attribute__((always_inline)); // wait for a pending flash transfer to complete
 
 uint8_t writeByte(uint8_t data);
@@ -107,6 +95,8 @@ inline void writeByteBeforeWait(uint8_t data) __attribute__((always_inline));
 
 inline void writeByteAfterWait(uint8_t data) __attribute__((always_inline));
 uint8_t readByte(); //read a single byte from flash memory
+
+void detectLastPageUsed();
 
 void TGT1_readJedecID(JedecID* id);
 bool TGT1_checkJedecID();

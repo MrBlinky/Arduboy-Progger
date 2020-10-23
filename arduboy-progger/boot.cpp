@@ -1,5 +1,7 @@
 #include "boot.h"
 
+uint16_t lastPage;
+
 void bootPins()
 {
   // LEDs and source SPI
@@ -116,6 +118,55 @@ void boot()
   bootOLED();
 }
 
+/******************************************************************************/
+
+void detectLastPageUsed()
+{
+   uint16_t page = MAX_FX_SIZE * 4L - 1L;
+   uint8_t data = 0xFF;
+   FX::begin();
+   do 
+   {
+     FX::enable();
+     FX::writeByte(SFC_READ);
+     FX::writeByte(page >> 8);
+     FX::writeByte(page & 0xFF);
+     FX::writeByte(0);
+     // some assembly to speed up checking a page contains 0xFFs only
+     asm volatile
+     (
+     "  ldi     r24, 0              \n" 
+     "  rjmp    2f                  \n"
+     "1:                            \n"
+     "  in      %[data], %[spdr]    \n"
+     "2:                            \n"
+     "  out     %[spdr], r1         \n"
+     "  cpi     %[data], 0xFF       \n"
+     "  brne    4f                  \n"
+     
+     "  dec     r24                 \n"
+     "  cpi     r24, 1              \n"
+     "  sbc     %A[page], r1        \n"
+     "  sbc     %B[page], r1        \n"
+     "  mov     r0, %A[page]        \n"
+     "  or      r0, %B[page]        \n"
+     "  brne    3f                  \n"
+     "  ldi     %[data], 0          \n"
+     "3:                            \n"
+     "  lpm                         \n"
+     "  tst     r24                 \n"
+     "  brne    1b                  \n"
+     "4:                            \n"
+     : [data] "+d" (data), 
+       [page] "+r" (page)
+     : [spdr] "I" (_SFR_IO_ADDR(SPDR))
+     : "r24" 
+     );
+     FX::wait();
+     FX::disable();
+   } while(data == 0xFF);
+   lastPage = page;
+}
 /******************************************************************************/
 
 inline void wait()

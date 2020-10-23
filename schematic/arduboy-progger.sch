@@ -15740,23 +15740,23 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 <attribute name="VALUE" x="65.659" y="148.336" size="1.778" layer="96" rot="MR270"/>
 </instance>
 <instance part="JP3" gate="A" x="91.44" y="157.48" rot="R90"/>
-<instance part="C3" gate="G$1" x="96.52" y="142.24" smashed="yes" rot="MR0">
-<attribute name="NAME" x="96.139" y="145.796" size="1.778" layer="95" rot="MR270"/>
-<attribute name="VALUE" x="98.679" y="148.336" size="1.778" layer="96" rot="MR270"/>
+<instance part="C3" gate="G$1" x="99.06" y="139.7" smashed="yes" rot="MR180">
+<attribute name="NAME" x="99.441" y="136.144" size="1.778" layer="95" rot="MR90"/>
+<attribute name="VALUE" x="96.901" y="133.604" size="1.778" layer="96" rot="MR90"/>
 </instance>
-<instance part="D1" gate="1" x="17.78" y="119.38" smashed="yes" rot="R90">
-<attribute name="NAME" x="15.875" y="117.094" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="16.129" y="122.174" size="1.778" layer="96" rot="R90"/>
+<instance part="D1" gate="1" x="17.78" y="124.46" smashed="yes" rot="R270">
+<attribute name="NAME" x="14.605" y="129.286" size="1.778" layer="95" rot="R270"/>
+<attribute name="VALUE" x="14.351" y="121.666" size="1.778" layer="96" rot="R270"/>
 </instance>
-<instance part="D2" gate="1" x="53.34" y="119.38" smashed="yes" rot="R90">
-<attribute name="NAME" x="51.435" y="117.094" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="51.689" y="122.174" size="1.778" layer="96" rot="R90"/>
+<instance part="D2" gate="1" x="53.34" y="124.46" smashed="yes" rot="R270">
+<attribute name="NAME" x="50.165" y="129.286" size="1.778" layer="95" rot="R270"/>
+<attribute name="VALUE" x="49.911" y="121.666" size="1.778" layer="96" rot="R270"/>
 </instance>
-<instance part="D3" gate="1" x="86.36" y="119.38" smashed="yes" rot="R90">
-<attribute name="NAME" x="84.455" y="117.094" size="1.778" layer="95" rot="R90"/>
-<attribute name="VALUE" x="84.709" y="122.174" size="1.778" layer="96" rot="R90"/>
+<instance part="D3" gate="1" x="86.36" y="124.46" smashed="yes" rot="R270">
+<attribute name="NAME" x="83.185" y="129.286" size="1.778" layer="95" rot="R270"/>
+<attribute name="VALUE" x="82.931" y="121.666" size="1.778" layer="96" rot="R270"/>
 </instance>
-<instance part="R1" gate="G$1" x="99.06" y="119.38" rot="R90"/>
+<instance part="R1" gate="G$1" x="99.06" y="124.46" rot="R90"/>
 <instance part="R2" gate="G$1" x="17.78" y="71.12" smashed="yes" rot="R90">
 <attribute name="NAME" x="15.7226" y="66.04" size="1.778" layer="95" rot="R270"/>
 <attribute name="VALUE" x="17.526" y="73.914" size="1.778" layer="96" rot="R90"/>
@@ -15843,12 +15843,15 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 </segment>
 <segment>
 <pinref part="JP3" gate="A" pin="7"/>
-<wire x1="96.52" y1="154.94" x2="96.52" y2="147.32" width="0.1524" layer="91"/>
-<wire x1="96.52" y1="144.78" x2="96.52" y2="147.32" width="0.1524" layer="91"/>
-<wire x1="96.52" y1="147.32" x2="93.98" y2="147.32" width="0.1524" layer="91"/>
-<label x="93.98" y="132.08" size="1.778" layer="95" rot="MR270"/>
+<wire x1="96.52" y1="154.94" x2="96.52" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="99.06" y1="137.16" x2="99.06" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="99.06" y1="132.08" x2="96.52" y2="132.08" width="0.1524" layer="91"/>
+<label x="104.648" y="132.842" size="1.778" layer="95" rot="MR180"/>
 <pinref part="C3" gate="G$1" pin="1"/>
-<wire x1="93.98" y1="147.32" x2="93.98" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="99.06" y1="132.08" x2="104.14" y2="132.08" width="0.1524" layer="91"/>
+<pinref part="R1" gate="G$1" pin="2"/>
+<wire x1="99.06" y1="132.08" x2="99.06" y2="129.54" width="0.1524" layer="91"/>
+<junction x="99.06" y="132.08"/>
 </segment>
 <segment>
 <pinref part="S1" gate="G$1" pin="1"/>
@@ -15938,15 +15941,12 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 </segment>
 <segment>
 <pinref part="JP3" gate="A" pin="8"/>
-<wire x1="99.06" y1="154.94" x2="99.06" y2="134.62" width="0.1524" layer="91"/>
-<wire x1="99.06" y1="124.46" x2="99.06" y2="134.62" width="0.1524" layer="91"/>
-<wire x1="99.06" y1="134.62" x2="96.52" y2="134.62" width="0.1524" layer="91"/>
-<wire x1="96.52" y1="134.62" x2="96.52" y2="137.16" width="0.1524" layer="91"/>
-<label x="101.6" y="134.62" size="1.778" layer="95" rot="MR180"/>
+<wire x1="99.06" y1="154.94" x2="99.06" y2="147.32" width="0.1524" layer="91"/>
+<wire x1="99.06" y1="147.32" x2="99.06" y2="144.78" width="0.1524" layer="91"/>
+<label x="104.648" y="148.082" size="1.778" layer="95" rot="MR180"/>
 <pinref part="C3" gate="G$1" pin="2"/>
-<pinref part="R1" gate="G$1" pin="2"/>
-<wire x1="99.06" y1="134.62" x2="101.6" y2="134.62" width="0.1524" layer="91"/>
-<junction x="99.06" y="134.62"/>
+<wire x1="99.06" y1="147.32" x2="104.14" y2="147.32" width="0.1524" layer="91"/>
+<junction x="99.06" y="147.32"/>
 </segment>
 <segment>
 <pinref part="LED1" gate="G$1" pin="A"/>
@@ -16213,8 +16213,8 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 <segment>
 <pinref part="JP1" gate="A" pin="3"/>
 <label x="17.78" y="147.32" size="1.778" layer="95" rot="MR270"/>
-<wire x1="17.78" y1="154.94" x2="17.78" y2="121.92" width="0.1524" layer="91"/>
-<pinref part="D1" gate="1" pin="C"/>
+<wire x1="17.78" y1="154.94" x2="17.78" y2="127" width="0.1524" layer="91"/>
+<pinref part="D1" gate="1" pin="A"/>
 </segment>
 </net>
 <net name="TGT2_SCL" class="0">
@@ -16250,8 +16250,8 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 <segment>
 <pinref part="JP2" gate="A" pin="3"/>
 <label x="53.34" y="147.32" size="1.778" layer="95" rot="MR270"/>
-<wire x1="53.34" y1="154.94" x2="53.34" y2="121.92" width="0.1524" layer="91"/>
-<pinref part="D2" gate="1" pin="C"/>
+<wire x1="53.34" y1="154.94" x2="53.34" y2="127" width="0.1524" layer="91"/>
+<pinref part="D2" gate="1" pin="A"/>
 </segment>
 </net>
 <net name="TGT3_SCL" class="0">
@@ -16287,8 +16287,8 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 <segment>
 <pinref part="JP3" gate="A" pin="3"/>
 <label x="86.36" y="147.32" size="1.778" layer="95" rot="MR270"/>
-<wire x1="86.36" y1="154.94" x2="86.36" y2="121.92" width="0.1524" layer="91"/>
-<pinref part="D3" gate="1" pin="C"/>
+<wire x1="86.36" y1="154.94" x2="86.36" y2="127" width="0.1524" layer="91"/>
+<pinref part="D3" gate="1" pin="A"/>
 </segment>
 </net>
 <net name="TGT_MISO" class="0">
@@ -16299,17 +16299,17 @@ Marquardt, RAFI, ITT, and others&lt;p&gt;
 <wire x1="99.06" y1="111.76" x2="86.36" y2="111.76" width="0.1524" layer="91"/>
 <wire x1="86.36" y1="111.76" x2="53.34" y2="111.76" width="0.1524" layer="91"/>
 <wire x1="53.34" y1="111.76" x2="17.78" y2="111.76" width="0.1524" layer="91"/>
-<wire x1="17.78" y1="111.76" x2="17.78" y2="116.84" width="0.1524" layer="91"/>
-<pinref part="D1" gate="1" pin="A"/>
-<pinref part="D2" gate="1" pin="A"/>
-<wire x1="53.34" y1="111.76" x2="53.34" y2="116.84" width="0.1524" layer="91"/>
-<pinref part="D3" gate="1" pin="A"/>
-<wire x1="86.36" y1="116.84" x2="86.36" y2="111.76" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="111.76" x2="17.78" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="53.34" y1="111.76" x2="53.34" y2="121.92" width="0.1524" layer="91"/>
+<wire x1="86.36" y1="121.92" x2="86.36" y2="111.76" width="0.1524" layer="91"/>
 <pinref part="R1" gate="G$1" pin="1"/>
-<wire x1="99.06" y1="114.3" x2="99.06" y2="111.76" width="0.1524" layer="91"/>
+<wire x1="99.06" y1="119.38" x2="99.06" y2="111.76" width="0.1524" layer="91"/>
 <junction x="99.06" y="111.76"/>
 <junction x="86.36" y="111.76"/>
 <junction x="53.34" y="111.76"/>
+<pinref part="D1" gate="1" pin="C"/>
+<pinref part="D2" gate="1" pin="C"/>
+<pinref part="D3" gate="1" pin="C"/>
 </segment>
 </net>
 <net name="TGT_MOSI" class="0">

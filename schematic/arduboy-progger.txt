@@ -1,0 +1,5 @@
+2020-10-23 Rev1 changes
+-----------------------
+
+D1,D2,D3 are reversed (Anodes now face modchips instead of Teensy).
+R1 is connected to GND instead of VCC (pull down instead of pull up).
