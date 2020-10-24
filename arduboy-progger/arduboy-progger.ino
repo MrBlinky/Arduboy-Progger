@@ -62,6 +62,27 @@ void updateStatusDisplay()
   CS_PORT |= (1 << CS_BIT);
 }
 
+uint32_t getChecksum()
+{
+  setSourceStartAddress();
+  uint16_t page = 0;
+  uint32_t csum = 0;
+  do
+  {
+    uint8_t i = 0;
+    do
+    {
+      FX::wait();
+      csum += SPDR;
+      SPDR = 0;
+    } 
+    while (--i != 0);
+  }
+  while (page++ != lastPage);
+  FX::disable();  
+  return csum;
+}
+
 void setup() 
 {
    boot();
@@ -93,6 +114,7 @@ void setup()
    }
    else // normal startup
    {
+     // determine flash image size size
      sprites.drawSelfMasked(0,0,startBitmap,0);
      updateStartDisplay();
      LED1_YEL;
@@ -107,11 +129,11 @@ void setup()
        if (size == 0) break;
      }
      updateStartDisplay();
-     
-     uint32_t csum = 0;
+     // get flash image checksum
+     uint32_t csum = getChecksum();
      for (uint8_t i = 0; i < 8; ++i)
      {
-       sprites.drawSelfMasked(122 - i * 7, 49, numbersBitmap, csum % 10);
+       sprites.drawSelfMasked(122 - i * 7, 49, numbersBitmap, csum % 16);
        csum >>= 4;
      }
      updateStartDisplay();
