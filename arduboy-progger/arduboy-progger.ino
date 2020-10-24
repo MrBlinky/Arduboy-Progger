@@ -16,10 +16,11 @@
 #define MC_NOT_FOUND    0
 #define MC_FX_FOUND     1
 #define MC_AVR_FOUND    2
-#define MC_PROGRAM      3
-#define MC_VERIFY       4
-#define MC_FAIL         5
-#define MC_PASS         6
+#define MC_ERASE        3
+#define MC_PROGRAM      4
+#define MC_VERIFY       5
+#define MC_FAIL         6
+#define MC_PASS         7
 
 extern uint16_t lastPage;
 Arduboy2 arduboy;
@@ -53,7 +54,7 @@ void updateDisplay()
 
 void setup() 
 {
-   Serial.begin(115200);
+   //Serial.begin(115200);
    boot();
    arduboy.display(CLEAR_BUFFER); 
    CS_PORT |= (1 << CS_BIT);
@@ -116,12 +117,14 @@ bool flashModChip(uint8_t modchip)
   else if (modchip == MODCHIP2) result = ISP2_enable();
   else if (modchip == MODCHIP3) result = ISP3_enable();
   if (result) {
-    chipState[modchip].avr = MC_PROGRAM;
     if      (modchip == MODCHIP1) LED1_RED;
     else if (modchip == MODCHIP2) LED2_RED;
     else if (modchip == MODCHIP3) LED3_RED;
+    chipState[modchip].avr = MC_ERASE;
     updateDisplay();
     ISP_eraseChip();
+    chipState[modchip].avr = MC_PROGRAM;
+    updateDisplay();
     ISP_writeProgramFlash(FIRMWARE);
     if      (modchip == MODCHIP1) LED1_OFF;
     else if (modchip == MODCHIP2) LED2_OFF;
@@ -179,6 +182,84 @@ void fxChipErase(uint8_t modchips)
   if (modchips & (1 << MODCHIP3)) TGT3_DISABLE;
 }
 
+void verifyFxChip(uint8_t modchip)
+{
+  
+  // verify
+  uint16_t page = 0;
+  setSourceStartAddress();
+  if (modchip == MODCHIP1) TGT1_ENABLE;
+  if (modchip == MODCHIP2) TGT2_ENABLE;
+  if (modchip == MODCHIP3) TGT3_ENABLE;
+  writeByte(SFC_READ);
+  writeByte(page >> 8);
+  writeByte(page & 0xFF);
+  writeByte(0);
+  bool fail = false;
+  do
+  {
+    uint8_t i = 0;
+    do
+    {
+      uint8_t data = SPDR;
+      SPSR;
+      SPDR = 0;
+      if (readByte() != data)
+      {
+        fail = true;  
+        break;
+      }
+    } 
+    while (--i != 0);
+  }
+  while ((page++ != lastPage) && (!fail));
+  FX::disable();  
+
+  if (modchip == MODCHIP1)
+  {
+    TGT1_DISABLE;
+    if (fail)
+    {
+      chipState[MODCHIP1].fx = MC_FAIL;        
+      LED1_RED;
+    }
+    else
+    {
+      chipState[MODCHIP1].fx = MC_PASS;        
+      LED1_GRN;
+    }
+  }
+  if (modchip == MODCHIP2)
+  {
+    TGT2_DISABLE;
+    if (fail)
+    {
+      chipState[MODCHIP2].fx = MC_FAIL;        
+      LED2_RED;
+    }
+    else
+    {
+      chipState[MODCHIP2].fx = MC_PASS;        
+      LED2_GRN;
+    }
+  }
+  if (modchip == MODCHIP3)
+  {
+    TGT3_DISABLE;
+    if (fail)
+    {
+      chipState[MODCHIP3].fx = MC_FAIL;        
+      LED3_RED;
+    }
+    else
+    {
+      chipState[MODCHIP3].fx = MC_PASS;        
+      LED3_GRN;
+    }
+  }
+  updateDisplay();
+}
+
 void flashFxChip()
 {
   uint8_t modchips = 0;
@@ -205,15 +286,8 @@ void flashFxChip()
   //fxChipErase(modchips);
   //LED1_YEL;
   
-  //prepare source flash
-  FX::enable();
-  FX::writeByte(SFC_READ);
-  FX::writeByte(0);
-  FX::writeByte(0);
-  FX::writeByte(0);
-  SPDR = 0;
-  
   // program  
+  setSourceStartAddress();
   uint16_t page = 0;
   do
   {
@@ -238,8 +312,6 @@ void flashFxChip()
       uint8_t data = SPDR;
       SPSR;
       SPDR = 0;
-      //if (data < 16) Serial.print('0');
-      //Serial.println(data,HEX);
       writeByte(data);
     } 
     while (--i != 0);
@@ -262,20 +334,24 @@ void flashFxChip()
 
   if (modchips & (1 << MODCHIP1))
   {
-    chipState[MODCHIP1].fx = MC_FX_FOUND;
+    chipState[MODCHIP1].fx = MC_VERIFY;
     LED1_OFF;
   }
   if (modchips & (1 << MODCHIP2))
   {
-    chipState[MODCHIP2].fx = MC_FX_FOUND;
+    chipState[MODCHIP2].fx = MC_VERIFY;
     LED2_OFF;
   }
   if (modchips & (1 << MODCHIP3))
   {
-    chipState[MODCHIP3].fx = MC_FX_FOUND;
+    chipState[MODCHIP3].fx = MC_VERIFY;
     LED3_OFF;
   }
   updateDisplay();
+  
+  if (modchips & (1 << MODCHIP1)) verifyFxChip(MODCHIP1);
+  if (modchips & (1 << MODCHIP2)) verifyFxChip(MODCHIP2);
+  if (modchips & (1 << MODCHIP3)) verifyFxChip(MODCHIP3);
 }
     
 void loop() {

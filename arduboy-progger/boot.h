@@ -97,6 +97,7 @@ inline void writeByteAfterWait(uint8_t data) __attribute__((always_inline));
 uint8_t readByte(); //read a single byte from flash memory
 
 void detectLastPageUsed();
+void setSourceStartAddress();
 
 void TGT1_readJedecID(JedecID* id);
 bool TGT1_checkJedecID();

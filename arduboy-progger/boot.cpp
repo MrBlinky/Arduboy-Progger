@@ -167,6 +167,18 @@ void detectLastPageUsed()
    } while(data == 0xFF);
    lastPage = page;
 }
+
+void setSourceStartAddress()
+{
+  //prepare source flash
+  FX::enable();
+  FX::writeByte(SFC_READ);
+  FX::writeByte(0);
+  FX::writeByte(0);
+  FX::writeByte(0);
+  SPDR = 0;
+}  
+
 /******************************************************************************/
 
 inline void wait()
