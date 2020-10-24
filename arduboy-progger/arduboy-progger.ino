@@ -5,6 +5,8 @@
 #include "ArduboyFX.h"
 #include "fxStateBitmap.h"
 #include "slotBitmap.h"
+#include "startBitmap.h"
+#include "numbersBitmap.h"
 #include "mod-chip-attiny.ino.tiny8.menu.h"
 
 #define FIRMWARE mod_chip_attiny_ino_tiny8_menu
@@ -56,7 +58,8 @@ void setup()
 {
    //Serial.begin(115200);
    boot();
-   arduboy.display(CLEAR_BUFFER); 
+   sprites.drawSelfMasked(0,0,startBitmap,0);
+   arduboy.display(); 
    CS_PORT |= (1 << CS_BIT);
    LED1_YEL;
    LED2_YEL;
@@ -71,12 +74,25 @@ void setup()
    FX::disable();
 */
    detectLastPageUsed();
+   uint16_t size = (lastPage >> 2) + 1;
+   for (uint8_t i = 0; i < 5; ++i)
+   {
+     sprites.drawSelfMasked(106 - i * 7, 30, numbersBitmap, size % 10);
+     size /= 10;
+     if (size == 0) break;
+   }      
    LED1_OFF;
    LED2_OFF;
    LED3_OFF;
    USB_LED_OFF;
    
-   while(!BUTTON_IDLE); //wait if button still depressed from bootloader exit
+   CS_PORT &= ~(1 << CS_BIT);
+   arduboy.display(CLEAR_BUFFER); 
+   CS_PORT |= (1 << CS_BIT);
+   while(BUTTON_IDLE);
+   delayMillis(20);
+   while(!BUTTON_IDLE);
+   delayMillis(20);
 }
 
 uint8_t detectCount;
@@ -154,6 +170,36 @@ bool flashModChip(uint8_t modchip)
   return result;
 }
 
+bool usedFxChip(uint8_t modchip)
+{
+  bool used = false;
+  if (modchip == MODCHIP1) TGT1_ENABLE;
+  if (modchip == MODCHIP2) TGT2_ENABLE;
+  if (modchip == MODCHIP3) TGT3_ENABLE;
+  // test for 1st 256 bytes are empty (0xFF)
+  writeByte(SFC_READ);
+  writeByte(0);
+  writeByte(0);
+  writeByte(0);
+  uint8_t i = 0;
+  do 
+  {
+    uint8_t data = SPDR;
+    SPSR;
+    SPDR = 0;
+    if (readByte() != 0xFF)
+    {
+      used = true;  
+      break;
+    }
+  } 
+  while (--i != 0);
+  if (modchip == MODCHIP1) TGT1_DISABLE;
+  if (modchip == MODCHIP2) TGT2_DISABLE;
+  if (modchip == MODCHIP3) TGT3_DISABLE;
+  return used;
+}
+
 void fxChipErase(uint8_t modchips)
 {
   if (modchips & (1 << MODCHIP1)) TGT1_ENABLE;
@@ -184,6 +230,8 @@ void fxChipErase(uint8_t modchips)
 
 void verifyFxChip(uint8_t modchip)
 {
+  chipState[modchip].fx = MC_VERIFY;
+  updateDisplay();
   
   // verify
   uint16_t page = 0;
@@ -260,33 +308,44 @@ void verifyFxChip(uint8_t modchip)
   updateDisplay();
 }
 
+  
+
 void flashFxChip()
 {
   uint8_t modchips = 0;
   if ((chipState[MODCHIP1].fx == MC_FX_FOUND) & (chipState[MODCHIP1].avr == MC_PASS))
   {
     modchips |= (1 << MODCHIP1);
-    chipState[MODCHIP1].fx = MC_PROGRAM;
+    if (usedFxChip(MODCHIP1)) modchips |= 0x80;
     LED1_RED;
   }
   if ((chipState[MODCHIP2].fx == MC_FX_FOUND) & (chipState[MODCHIP2].avr == MC_PASS)) 
   {
     modchips |= (1 << MODCHIP2);
-    chipState[MODCHIP2].fx = MC_PROGRAM;
+    if (usedFxChip(MODCHIP2)) modchips |= 0x80;
     LED2_RED;
   }
   if ((chipState[MODCHIP3].fx == MC_FX_FOUND) & (chipState[MODCHIP3].avr == MC_PASS)) 
   {
     modchips |= (1 << MODCHIP3);
-    chipState[MODCHIP3].fx = MC_PROGRAM;
+    if (usedFxChip(MODCHIP3)) modchips |= 0x80;
     LED3_RED;
   }
-  updateDisplay();
-
-  //fxChipErase(modchips);
-  //LED1_YEL;
+  // chip erase
+  if (modchips & 0x80) // required
+  {
+    if (modchips & (1 << MODCHIP1)) chipState[MODCHIP1].fx = MC_ERASE;
+    if (modchips & (1 << MODCHIP2)) chipState[MODCHIP2].fx = MC_ERASE;
+    if (modchips & (1 << MODCHIP3)) chipState[MODCHIP3].fx = MC_ERASE;
+    updateDisplay();
+    fxChipErase(modchips);
+  }
   
-  // program  
+  // program
+  if (modchips & (1 << MODCHIP1)) chipState[MODCHIP1].fx = MC_PROGRAM;
+  if (modchips & (1 << MODCHIP2)) chipState[MODCHIP2].fx = MC_PROGRAM;
+  if (modchips & (1 << MODCHIP3)) chipState[MODCHIP3].fx = MC_PROGRAM;
+  updateDisplay();
   setSourceStartAddress();
   uint16_t page = 0;
   do
@@ -334,21 +393,19 @@ void flashFxChip()
 
   if (modchips & (1 << MODCHIP1))
   {
-    chipState[MODCHIP1].fx = MC_VERIFY;
+    chipState[MODCHIP1].fx = MC_FX_FOUND;
     LED1_OFF;
   }
   if (modchips & (1 << MODCHIP2))
   {
-    chipState[MODCHIP2].fx = MC_VERIFY;
+    chipState[MODCHIP2].fx = MC_FX_FOUND;
     LED2_OFF;
   }
   if (modchips & (1 << MODCHIP3))
   {
-    chipState[MODCHIP3].fx = MC_VERIFY;
+    chipState[MODCHIP3].fx = MC_FX_FOUND;
     LED3_OFF;
   }
-  updateDisplay();
-  
   if (modchips & (1 << MODCHIP1)) verifyFxChip(MODCHIP1);
   if (modchips & (1 << MODCHIP2)) verifyFxChip(MODCHIP2);
   if (modchips & (1 << MODCHIP3)) verifyFxChip(MODCHIP3);
