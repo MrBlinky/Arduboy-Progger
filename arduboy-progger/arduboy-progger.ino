@@ -7,6 +7,7 @@
 #include "slotBitmap.h"
 #include "startBitmap.h"
 #include "numbersBitmap.h"
+#include "eraseBitmap.h"
 #include "mod-chip-attiny.ino.tiny8.menu.h"
 
 #define FIRMWARE mod_chip_attiny_ino_tiny8_menu
@@ -41,7 +42,14 @@ void delayMillis(uint8_t millis) // wrapper for ISP delay
   arduboy.delayShort(millis);
 }
 
-void updateDisplay()
+void updateStartDisplay()
+{
+  CS_PORT &= ~(1 << CS_BIT);
+  arduboy.display(); 
+  CS_PORT |= (1 << CS_BIT);
+}
+
+void updateStatusDisplay()
 {
   for (uint8_t i = 0; i < 3; ++i)
   {
@@ -56,43 +64,66 @@ void updateDisplay()
 
 void setup() 
 {
-   //Serial.begin(115200);
    boot();
-   sprites.drawSelfMasked(0,0,startBitmap,0);
-   arduboy.display(); 
-   CS_PORT |= (1 << CS_BIT);
-   LED1_YEL;
-   LED2_YEL;
-   LED3_YEL;
-   USB_LED_ON;
-/* 
-   // erase chip  
-   FX::writeEnable();
-   FX::writeCommand(0xC7);
-   FX::enable();
-   while (FX::writeByte(SFC_READSTATUS1) & 1);
-   FX::disable();
-*/
-   detectLastPageUsed();
-   uint16_t size = (lastPage >> 2) + 1;
-   for (uint8_t i = 0; i < 5; ++i)
+   updateStartDisplay(); // black display
+   uint8_t count = 0;
+   while (!BUTTON_IDLE)
    {
-     sprites.drawSelfMasked(106 - i * 7, 30, numbersBitmap, size % 10);
-     size /= 10;
-     if (size == 0) break;
-   }      
-   LED1_OFF;
-   LED2_OFF;
-   LED3_OFF;
-   USB_LED_OFF;
-   
-   CS_PORT &= ~(1 << CS_BIT);
-   arduboy.display(CLEAR_BUFFER); 
-   CS_PORT |= (1 << CS_BIT);
-   while(BUTTON_IDLE);
-   delayMillis(20);
-   while(!BUTTON_IDLE);
-   delayMillis(20);
+     if (++count == 200) break; // button hold down for 2 seconds
+     delayMillis(10);
+   }
+   FX::begin();
+   if (count == 200) //erase mode
+   {
+     sprites.drawSelfMasked((WIDTH - 110) / 2, (HEIGHT - 10) / 2, eraseBitmap, 0);
+     updateStartDisplay();
+     LED1_RED;
+     LED2_RED;
+     LED3_RED;
+     // erase chip  
+     FX::writeEnable();
+     FX::writeCommand(0xC7);
+     FX::enable();
+     while (FX::writeByte(SFC_READSTATUS1) & 1);
+     FX::disable();
+     LED1_OFF;
+     LED2_OFF;
+     LED3_OFF;
+     lastPage = 0;
+   }
+   else // normal startup
+   {
+     sprites.drawSelfMasked(0,0,startBitmap,0);
+     updateStartDisplay();
+     LED1_YEL;
+     LED2_YEL;
+     LED3_YEL;
+     detectLastPageUsed();
+     uint16_t size = (lastPage >> 2) + 1;
+     for (uint8_t i = 0; i < 5; ++i)
+     {
+       sprites.drawSelfMasked(106 - i * 7, 30, numbersBitmap, size % 10);
+       size /= 10;
+       if (size == 0) break;
+     }
+     updateStartDisplay();
+     
+     uint32_t csum = 0;
+     for (uint8_t i = 0; i < 8; ++i)
+     {
+       sprites.drawSelfMasked(122 - i * 7, 49, numbersBitmap, csum % 10);
+       csum >>= 4;
+     }
+     updateStartDisplay();
+     LED1_OFF;
+     LED2_OFF;
+     LED3_OFF;
+     while(BUTTON_IDLE);
+     delayMillis(20);
+     while(!BUTTON_IDLE);
+     delayMillis(20);
+   }
+   arduboy.clear();
 }
 
 uint8_t detectCount;
@@ -123,7 +154,7 @@ void chipDetect()
     LED3_OFF;
   }
   if (++detectCount >=  30) detectCount = 0;
-  updateDisplay();
+  updateStatusDisplay();
 }
 
 bool flashModChip(uint8_t modchip)
@@ -137,16 +168,16 @@ bool flashModChip(uint8_t modchip)
     else if (modchip == MODCHIP2) LED2_RED;
     else if (modchip == MODCHIP3) LED3_RED;
     chipState[modchip].avr = MC_ERASE;
-    updateDisplay();
+    updateStatusDisplay();
     ISP_eraseChip();
     chipState[modchip].avr = MC_PROGRAM;
-    updateDisplay();
+    updateStatusDisplay();
     ISP_writeProgramFlash(FIRMWARE);
     if      (modchip == MODCHIP1) LED1_OFF;
     else if (modchip == MODCHIP2) LED2_OFF;
     else if (modchip == MODCHIP3) LED3_OFF;
     chipState[modchip].avr = MC_VERIFY;
-    updateDisplay();
+    updateStatusDisplay();
     if (ISP_verifyProgramFlash(FIRMWARE))
     {
       if      (modchip == MODCHIP1) LED1_GRN;
@@ -165,7 +196,7 @@ bool flashModChip(uint8_t modchip)
     if      (modchip == MODCHIP1) ISP1_disable();
     else if (modchip == MODCHIP2) ISP2_disable();
     else if (modchip == MODCHIP3) ISP3_disable();
-    updateDisplay();
+    updateStatusDisplay();
   }
   return result;
 }
@@ -184,9 +215,6 @@ bool usedFxChip(uint8_t modchip)
   uint8_t i = 0;
   do 
   {
-    uint8_t data = SPDR;
-    SPSR;
-    SPDR = 0;
     if (readByte() != 0xFF)
     {
       used = true;  
@@ -231,7 +259,7 @@ void fxChipErase(uint8_t modchips)
 void verifyFxChip(uint8_t modchip)
 {
   chipState[modchip].fx = MC_VERIFY;
-  updateDisplay();
+  updateStatusDisplay();
   
   // verify
   uint16_t page = 0;
@@ -305,7 +333,7 @@ void verifyFxChip(uint8_t modchip)
       LED3_GRN;
     }
   }
-  updateDisplay();
+  updateStatusDisplay();
 }
 
   
@@ -337,7 +365,7 @@ void flashFxChip()
     if (modchips & (1 << MODCHIP1)) chipState[MODCHIP1].fx = MC_ERASE;
     if (modchips & (1 << MODCHIP2)) chipState[MODCHIP2].fx = MC_ERASE;
     if (modchips & (1 << MODCHIP3)) chipState[MODCHIP3].fx = MC_ERASE;
-    updateDisplay();
+    updateStatusDisplay();
     fxChipErase(modchips);
   }
   
@@ -345,7 +373,7 @@ void flashFxChip()
   if (modchips & (1 << MODCHIP1)) chipState[MODCHIP1].fx = MC_PROGRAM;
   if (modchips & (1 << MODCHIP2)) chipState[MODCHIP2].fx = MC_PROGRAM;
   if (modchips & (1 << MODCHIP3)) chipState[MODCHIP3].fx = MC_PROGRAM;
-  updateDisplay();
+  updateStatusDisplay();
   setSourceStartAddress();
   uint16_t page = 0;
   do
